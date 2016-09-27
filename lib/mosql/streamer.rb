@@ -81,24 +81,20 @@ module MoSQL
     end
 
     def tail_with_retries(tries=3)
-      try = 1
-      while try <= tries
+      tries.times do |try|
         begin
           yield
         rescue Sequel::PoolTimeout, Sequel::DatabaseConnectionError, Sequel::DatabaseDisconnectError => e
           # Be less aggressive with the rerties. Every ten minutes three times.
-          delay = (60 * 10) * try 
+          delay = (10 * 60) * (try + 1)
           log.warn("Postgres exception: #{e}, sleeping #{delay}s...")
-          try += 1
-          if try > tries
-            raise Exception.new('Reached maximum number of retries')
-          end 
           sleep(delay)
         #Break out of the loop if no exception raised on retrying
         else
           break
         end
-      end    
+        raise Exception.new("Reached the maximum number of retries") if try == tries - 1
+      end   
     end
 
     def track_time
