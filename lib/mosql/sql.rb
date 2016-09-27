@@ -19,6 +19,7 @@ module MoSQL
                                end
                                conn.execute("SET search_path TO \"#{pgschema}\"")
                              end
+                               conn.execute('SET statement_timeout = 180000')
                            end)
     end
 
