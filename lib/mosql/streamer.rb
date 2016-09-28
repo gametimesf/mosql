@@ -1,5 +1,6 @@
 module MoSQL
   class Streamer
+    class RetryException < StandardError; end
     include MoSQL::Logging
 
     BATCH = 1000
@@ -80,20 +81,20 @@ module MoSQL
       end
     end
 
-    def tail_with_retries(tries=3)
+    def tail_with_retries(tries=6)
       tries.times do |try|
         begin
           yield
         rescue Sequel::PoolTimeout, Sequel::DatabaseConnectionError, Sequel::DatabaseDisconnectError => e
           # Be less aggressive with the rerties. Every ten minutes three times.
-          delay = (10 * 60) * (try + 1)
+          delay = 0.5 * (5 ** try)
           log.warn("Postgres exception: #{e}, sleeping #{delay}s...")
           sleep(delay)
         #Break out of the loop if no exception raised on retrying
         else
           break
         end
-        raise Exception.new("Reached the maximum number of retries") if try == tries - 1
+        raise RetryException, "Reached the maximum number of retries" if try == tries - 1
       end   
     end
 
