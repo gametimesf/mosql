@@ -73,11 +73,28 @@ module MoSQL
           raise if e.kind_of?(Mongo::OperationFailure) && [11000, 11001].include?(e.error_code)
           # Cursor timeout
           raise if e.kind_of?(Mongo::OperationFailure) && e.message =~ /^Query response returned CURSOR_NOT_FOUND/
-          delay = 0.5 * (1.5 ** try)
+          delay = 0.5 * (2 ** try)
           log.warn("Mongo exception: #{e}, sleeping #{delay}s...")
           sleep(delay)
         end
       end
+    end
+
+    def tail_with_retries(tries=3)
+      tries.times do |try|
+        begin
+          yield
+        rescue Sequel::PoolTimeout, Sequel::DatabaseConnectionError, Sequel::DatabaseDisconnectError => e
+          # Be less aggressive with the rerties. Every ten minutes three times.
+          delay = (10 * 60) * (try + 1)
+          log.warn("Postgres exception: #{e}, sleeping #{delay}s...")
+          sleep(delay)
+        #Break out of the loop if no exception raised on retrying
+        else
+          break
+        end
+        raise Exception.new("Reached the maximum number of retries") if try == tries - 1
+      end   
     end
 
     def track_time
@@ -173,7 +190,9 @@ module MoSQL
       tailer.tail(:from => tail_from, :filter => options[:oplog_filter])
       until @done
         tailer.stream(1000) do |op|
-          handle_op(op)
+          tail_with_retries do
+            handle_op(op)
+          end
         end
       end
     end
