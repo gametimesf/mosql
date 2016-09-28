@@ -81,7 +81,7 @@ module MoSQL
       end
     end
 
-    def tail_with_retries(tries=5)
+    def tail_with_retries(tries=6)
       tries.times do |try|
         begin
           yield
