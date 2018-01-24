@@ -199,7 +199,7 @@ module MoSQL
     end
 
     def sync_object(ns, selector)
-      obj = collection_for_ns(ns).find_one(selector)
+      obj = collection_for_ns(ns).find(selector).first
       if obj
         unsafe_handle_exceptions(ns, obj) do
           @sql.upsert_ns(ns, obj)
