@@ -195,8 +195,6 @@ module MoSQL
         else
           Sequel::SQL::Blob.new(v.to_s)
         end
-      when BSON::DBRef
-        v.object_id.to_s
       else
         v
       end
@@ -209,7 +207,7 @@ module MoSQL
 
       # Do a deep clone, because we're potentially going to be
       # mutating embedded objects.
-      obj = BSON.deserialize(BSON.serialize(obj))
+      obj = BSON::Document.from_bson(obj.to_bson)
 
       row = []
       schema[:columns].each do |col|
