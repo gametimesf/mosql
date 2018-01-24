@@ -127,6 +127,7 @@ module MoSQL
 
     def connect_mongo
       @mongo = Mongo::Client.new(options[:mongo], op_timeout: options[:op_timeout])
+      Mongo::Logger.level = Logger::INFO
       config = @mongo.use('admin').command(:ismaster => 1).first
       if !config['setName'] && !options[:skip_tail]
         log.warn("`#{options[:mongo]}' is not a replset.")
