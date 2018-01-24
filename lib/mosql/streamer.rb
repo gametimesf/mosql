@@ -32,7 +32,7 @@ module MoSQL
 
     def collection_for_ns(ns)
       dbname, collection = ns.split(".", 2)
-      @mongo.db(dbname).collection(collection)
+      Mongo::Database.new(@mongo, dbname)[collection]
     end
 
     def unsafe_handle_exceptions(ns, obj)
@@ -132,7 +132,7 @@ module MoSQL
         end
 
         log.info("Importing for Mongo DB #{dbname}...")
-        db = @mongo.db(dbname)
+        db = Mongo::Database.new(@mongo, dbname)
         collections = db.collections.select { |c| spec.key?(c.name) }
 
         collections.each do |collection|
